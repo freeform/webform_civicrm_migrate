@@ -307,8 +307,8 @@ class WebformCivicrmMigrateSubscriber implements EventSubscriberInterface {
       'none_prompt' => '',
       'show_hidden_contact' => '',
       'results_display' => ['display_name' => 'display_name'],
-      'no_autofill' => ['' => ''],
-      'hide_fields' => ['' => ''],
+      'no_autofill' => [],
+      'hide_fields' => [],
       'default' => '',
       'contact_sub_type' => '',
       'allow_create' => 0,
@@ -327,10 +327,10 @@ class WebformCivicrmMigrateSubscriber implements EventSubscriberInterface {
       'default_relationship' => '',
       'allow_url_autofill' => TRUE,
       'dupes_allowed' => FALSE,
-      'filter_relationship_types' => ['' => ''],
-      'filter_relationship_contact' => ['' => ''],
-      'group' => ['' => ''],
-      'tag' => ['' => ''],
+      'filter_relationship_types' => [],
+      'filter_relationship_contact' => [],
+      'group' => [],
+      'tag' => [],
       'check_permissions' => 1,
       'expose_list' => FALSE,
       'empty_option' => '',
@@ -418,6 +418,9 @@ class WebformCivicrmMigrateSubscriber implements EventSubscriberInterface {
         $new_key = WebformCivicrmMigrateSubscriber::fixKey($key);
         # Copy child to new key, recurse and delete broken key
         # version.
+        if (!is_array($element[$key])) {
+          continue;
+        }
         $child_element = $element[$key];
         $child_element['#form_key'] = $new_key;
         $element[$new_key] = $this->migrateWebformElement($child_element, $d7_form_settings, $nid);
@@ -482,6 +485,9 @@ class WebformCivicrmMigrateSubscriber implements EventSubscriberInterface {
 
   public function migrateCiviCRMSettings($data, $default_settings) {
     $settings = $default_settings;
+    if (empty($data['contact'])) {
+      return $settings;
+    }
     $settings['number_of_contacts']  = count($data['contact']);
 
     if (!empty($data['contact'])) {
@@ -533,6 +539,11 @@ class WebformCivicrmMigrateSubscriber implements EventSubscriberInterface {
 
     # Get the data from the source webform.
     $webformData = WebformCivicrmMigrateSubscriber::getWebformCiviCRMData($nid);
+
+    // Skip if CiviCRM processing was turned off.
+    if (empty($webformData)) {
+      return;
+    }
 
     # Create a handler
     $manager = \Drupal::service('plugin.manager.webform.handler');
